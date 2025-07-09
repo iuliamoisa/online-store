@@ -1,5 +1,7 @@
 package com.iulia.store.controllers;
 
+import com.iulia.store.dtos.RegisterUserDto;
+import com.iulia.store.dtos.UpdateUserDto;
 import com.iulia.store.dtos.UserDto;
 import com.iulia.store.entities.User;
 import com.iulia.store.mappers.UserMapper;
@@ -8,6 +10,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 import java.util.Set;
@@ -42,8 +45,6 @@ public class UserController {
 //                .map(user -> userMapper.userToUserDto(user)) // la fel ca mai sus
 //                .map(user -> new UserDto(user.getId(), user.getName(), user.getEmail()))
                 .toList();
-
-
     }
 
 //    @GetMapping("/{id}")
@@ -62,5 +63,41 @@ public class UserController {
 //            return ResponseEntity.ok(new UserDto(userDto.getId(), userDto.getName(), userDto.getEmail()));
         }
     }
+
+    @PostMapping
+    public ResponseEntity<UserDto> createUser(@RequestBody RegisterUserDto request,
+                              UriComponentsBuilder uriBuilder) {
+        var user = userMapper.userDtoToUser(request);
+        user = userRepository.save(user);
+        var userDto = userMapper.userToUserDto(user);
+        var uri = uriBuilder.path("/users/{id}").buildAndExpand(user.getId()).toUri();
+        return ResponseEntity.created(uri).body(userDto);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UserDto> updateUser(@PathVariable(name="id") Long id,
+                              @RequestBody UpdateUserDto request){
+        var user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+//        user.setName(request.getName());
+//        user.setEmail(request.getEmail());
+        userMapper.updateUserFromDto(request, user); // fromDto to existing entity
+        user = userRepository.save(user);
+        var userDto = userMapper.userToUserDto(user);
+        return ResponseEntity.ok(userDto);
+    }
+
+    @DeleteMapping("/id")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id){
+        var user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        userRepository.delete(user);
+        return ResponseEntity.noContent().build();
+    }
+
 }
 

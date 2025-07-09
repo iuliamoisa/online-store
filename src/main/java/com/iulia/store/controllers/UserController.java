@@ -1,5 +1,6 @@
 package com.iulia.store.controllers;
 
+import com.iulia.store.dtos.ChangePasswordDto;
 import com.iulia.store.dtos.RegisterUserDto;
 import com.iulia.store.dtos.UpdateUserDto;
 import com.iulia.store.dtos.UserDto;
@@ -8,6 +9,8 @@ import com.iulia.store.mappers.UserMapper;
 import com.iulia.store.repositories.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -89,7 +92,7 @@ public class UserController {
         return ResponseEntity.ok(userDto);
     }
 
-    @DeleteMapping("/id")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id){
         var user = userRepository.findById(id).orElse(null);
         if (user == null) {
@@ -98,6 +101,22 @@ public class UserController {
         userRepository.delete(user);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/change-password")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id,
+                                             @RequestBody ChangePasswordDto request) {
+          var user = userRepository.findById(id).orElse(null);
+          if (user == null) {
+                return ResponseEntity.notFound().build();
+          }
+          if(!user.getPassword().equals(request.getOldPassword())) {
+              //return ResponseEntity.badRequest().build(); // sau 403 Forbidden
+              return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+          }
+            user.setPassword(request.getNewPassword());
+            userRepository.save(user);
+            return ResponseEntity.noContent().build();
+     }
 
 }
 
